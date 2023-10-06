@@ -5,9 +5,6 @@ from io import StringIO
 import os
 
 # Initialize Constants
-# Constants
-FINNHUB_API_KEY = "c8ob3uaad3iddfsar4r0"
-QUERY_MAX = 5
 output_folder = "test/data/python"
 
 # List of exchanges to keep
