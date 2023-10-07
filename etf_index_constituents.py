@@ -1,4 +1,6 @@
-# Import Libraries
+# Description: Script to get the constituents of the ETFs that track the
+# Russell 1000, Russell 2000, Russell 3000, and S&P 500 indices
+# and save the data to a CSV file.
 import pandas as pd
 import requests
 from io import StringIO
@@ -21,7 +23,9 @@ def get_index_data(url, skip_rows=9):
     response = requests.get(url)
     csv_data = pd.read_csv(StringIO(response.text), skiprows=skip_rows)
     return csv_data[
-        (csv_data["Asset Class"] == "Equity") & csv_data["Exchange"].isin(exchange_list)
+        (csv_data["Asset Class"] == "Equity")
+        & csv_data["Exchange"].isin(exchange_list)
+        & csv_data["Ticker"].str.isalpha()
     ]
 
 
