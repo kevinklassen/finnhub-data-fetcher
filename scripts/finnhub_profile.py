@@ -1,8 +1,9 @@
 # Description: Fetches profile data for a list of tickers from the Finnhub API
 # and saves the data to a CSV file.
-import pandas as pd
-import os
 import asyncio
+import os
+import pandas as pd
+import random
 from modules.fetch_finnhub import fetch_finnhub_data
 from modules.plot_api_calls import plot_api_calls_per_minute, plot_api_calls_per_second
 
@@ -15,6 +16,9 @@ output_folder = "test/data/python"
 # Load the Finnhub investable universe
 finnhub_universe_df = pd.read_csv("test/data/python/finnhub_investable_universe.csv")
 tickers = finnhub_universe_df["Ticker"].tolist()
+
+# Randomize the order of the tickers
+random.shuffle(tickers)
 
 
 # Endpoint URL function for profile data
