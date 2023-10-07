@@ -1,4 +1,5 @@
 # Ignore all files in the test/ directory
+*/__pycache__/
 test/data/
 test/async/
 # Ignore macOS .DS_Store files

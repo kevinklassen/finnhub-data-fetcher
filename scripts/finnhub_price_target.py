@@ -1,4 +1,4 @@
-# Description: Fetches profile data for a list of tickers from the Finnhub API
+# Description: Fetches price targets data for a list of tickers from the Finnhub API
 # and saves the data to a CSV file.
 import asyncio
 import os
@@ -9,7 +9,7 @@ from modules.plot_api_calls import plot_api_calls_per_minute, plot_api_calls_per
 
 # Constants
 SIMULTANEOUS_CONNECTIONS = 10
-API_DELAY = 2  # 2 seconds
+API_DELAY = 2  # 1 second
 QUERY_MAX = 5
 output_folder = "test/data/python"
 
@@ -21,15 +21,19 @@ tickers = finnhub_universe_df["Ticker"].tolist()
 random.shuffle(tickers)
 
 
-# Endpoint URL function for profile data
-def profile_url_function(ticker, key):
-    return f"https://finnhub.io/api/v1/stock/profile?symbol={ticker}&token={key}"
+# Endpoint URL function for price targets data
+def price_targets_url_function(ticker, key):
+    return f"https://finnhub.io/api/v1/stock/price-target?symbol={ticker}&token={key}"
 
 
-# Fetch the profile data
+# Fetch the price targets data
 data_results, api_call_timestamps = asyncio.run(
     fetch_finnhub_data(
-        tickers, profile_url_function, SIMULTANEOUS_CONNECTIONS, API_DELAY, QUERY_MAX
+        tickers,
+        price_targets_url_function,
+        SIMULTANEOUS_CONNECTIONS,
+        API_DELAY,
+        QUERY_MAX,
     )
 )
 
@@ -37,14 +41,14 @@ data_results, api_call_timestamps = asyncio.run(
 results_df = pd.DataFrame(data_results)
 
 # Save Results to CSV
-results_df.to_csv(os.path.join(output_folder, "finnhub_profile.csv"), index=False)
+results_df.to_csv(os.path.join(output_folder, "finnhub_price_targets.csv"), index=False)
 
 # Save API Call Timestamps to CSV
 api_call_timestamps_df = pd.DataFrame(api_call_timestamps)
 api_call_timestamps_df.to_csv(
     os.path.join(
         output_folder,
-        f"finnhub_profile_api_call_timestamps_{pd.Timestamp.now().date()}.csv",
+        f"finnhub_price_targets_api_call_timestamps_{pd.Timestamp.now().date()}.csv",
     ),
     index=False,
 )
