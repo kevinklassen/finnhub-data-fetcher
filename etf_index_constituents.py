@@ -49,11 +49,23 @@ index_info_list = [
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
-# Get and write data for each index
+# Create a list to collect each index DataFrame
+all_indices_data = []
+
+# Get data for each index
 for index_name, index_url in index_info_list:
     # Get data
     index_data = get_index_data(index_url)
+    index_data["index_name"] = index_name
+    index_data["date"] = pd.Timestamp.now().date()
+    index_data["datetime"] = pd.Timestamp.now()
 
-    # Write to CSV
-    csv_path = os.path.join(output_folder, f"{index_name}.csv")
-    index_data.to_csv(csv_path, index=False)
+    # Append to the list
+    all_indices_data.append(index_data)
+
+# Concatenate all DataFrames
+all_indices_df = pd.concat(all_indices_data, ignore_index=True)
+
+# Write combined data to CSV
+csv_path = os.path.join(output_folder, "etf_index_constituents.csv")
+all_indices_df.to_csv(csv_path, index=False)
