@@ -46,5 +46,5 @@ supported_universe_df = investable_universe_df[
 ]
 
 # Save the Investable Universe to CSV
-csv_path = os.path.join(output_folder, "investable_universe.csv")
+csv_path = os.path.join(output_folder, "finnhub_investable_universe.csv")
 supported_universe_df.to_csv(csv_path, index=False)
