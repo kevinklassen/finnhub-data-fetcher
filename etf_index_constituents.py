@@ -70,6 +70,7 @@ for index_name, index_url in index_info_list:
 # Concatenate all DataFrames
 all_indices_df = pd.concat(all_indices_data, ignore_index=True)
 
-# Write combined data to CSV
-csv_path = os.path.join(output_folder, "etf_index_constituents.csv")
-all_indices_df.to_csv(csv_path, index=False)
+# Save to CSV
+all_indices_df.to_csv(
+    os.path.join(output_folder, "etf_index_constituents.csv"), index=False
+)
