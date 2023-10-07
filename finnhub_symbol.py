@@ -16,3 +16,4 @@ symbols_df = pd.DataFrame(response.json())
 
 # Step 2: Write to CSV
 csv_path = os.path.join(output_folder, "finnhub_symbol.csv")
+symbols_df.to_csv(csv_path, index=False)
