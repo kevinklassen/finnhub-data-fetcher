@@ -20,21 +20,12 @@ tickers = finnhub_universe_df["Ticker"].tolist()
 # Randomize the order of the tickers
 random.shuffle(tickers)
 
-
-# Endpoint URL function for profile data
-def profile_url_function(ticker, key):
-    return f"https://finnhub.io/api/v1/stock/profile?symbol={ticker}&token={key}"
-
-
 # Fetch the profile data
-data_results, api_call_timestamps = asyncio.run(
+results_df, api_call_timestamps = asyncio.run(
     fetch_finnhub_data(
-        tickers, profile_url_function, SIMULTANEOUS_CONNECTIONS, API_DELAY, QUERY_MAX
+        tickers, "profile", SIMULTANEOUS_CONNECTIONS, API_DELAY, QUERY_MAX
     )
 )
-
-# Convert the results to a DataFrame
-results_df = pd.DataFrame(data_results)
 
 # Save Results to CSV
 results_df.to_csv(os.path.join(output_folder, "finnhub_profile.csv"), index=False)
@@ -48,6 +39,7 @@ api_call_timestamps_df.to_csv(
     ),
     index=False,
 )
+
 # Plot API Call Timestamps
 plot_api_calls_per_minute(api_call_timestamps)
 plot_api_calls_per_second(api_call_timestamps)
