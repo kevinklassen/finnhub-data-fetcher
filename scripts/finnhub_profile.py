@@ -23,7 +23,11 @@ random.shuffle(tickers)
 # Fetch the profile data
 results_df, api_call_timestamps = asyncio.run(
     fetch_finnhub_data(
-        tickers, "profile", SIMULTANEOUS_CONNECTIONS, API_DELAY, QUERY_MAX
+        tickers,
+        endpoint="profile",
+        simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
+        api_delay=API_DELAY,
+        query_max=QUERY_MAX,
     )
 )
 
