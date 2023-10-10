@@ -9,6 +9,13 @@ from modules.fetch_finnhub import fetch_finnhub_data
 from modules.plot_api_calls import plot_api_calls_per_minute, plot_api_calls_per_second
 
 # Constants
+SIMULTANEOUS_CONNECTIONS = 2
+API_DELAY = 6 / 7
+QUERY_MAX = 5
+START_DATE = int(
+    datetime.strptime(str(date.today() - timedelta(days=7)), "%Y-%m-%d").timestamp()
+)
+END_DATE = int(datetime.strptime(str(date.today()), "%Y-%m-%d").timestamp())
 output_folder = "test/data/python"
 
 # Load the Finnhub investable universe
@@ -25,14 +32,11 @@ results_df, api_call_timestamps = asyncio.run(
         tickers,
         endpoint="candle",
         resolution="D",
-        start_date=int(
-            datetime.strptime(
-                str(date.today() - timedelta(days=7)), "%Y-%m-%d"
-            ).timestamp()
-        ),
-        end_date=int(datetime.strptime(str(date.today()), "%Y-%m-%d").timestamp()),
-        simultaneous_connections=2,
-        api_delay=1,
+        start_date=START_DATE,
+        end_date=END_DATE,
+        simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
+        api_delay=API_DELAY,
+        query_max=QUERY_MAX,
     )
 )
 

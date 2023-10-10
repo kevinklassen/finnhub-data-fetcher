@@ -8,6 +8,9 @@ from modules.fetch_finnhub import fetch_finnhub_data
 from modules.plot_api_calls import plot_api_calls_per_minute, plot_api_calls_per_second
 
 # Constants
+SIMULTANEOUS_CONNECTIONS = 2
+API_DELAY = 6 / 7
+QUERY_MAX = 5
 output_folder = "test/data/python"
 
 # Load the Finnhub investable universe
@@ -22,6 +25,9 @@ results_df, api_call_timestamps = asyncio.run(
     fetch_finnhub_data(
         tickers,
         endpoint="eps-estimate",
+        simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
+        api_delay=API_DELAY,
+        query_max=QUERY_MAX,
     )
 )
 
