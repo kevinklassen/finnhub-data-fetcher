@@ -1,7 +1,7 @@
 from modules.fetch_finnhub import fetch_finnhub_data
 
 # Parameters
-ENDPOINT = "price-target"
+ENDPOINT = "eps-estimate"
 SIMULTANEOUS_CONNECTIONS = 2
 API_DELAY = 6 / 7
 QUERY_MAX = 5
