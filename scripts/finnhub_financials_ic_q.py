@@ -1,5 +1,6 @@
-# Description: Fetches price target data for a list of tickers from the Finnhub API
-# and saves the data to a CSV file.
+# Description: Fetches quarterly income statement data for a list of tickers from
+# the Finnhub API and saves the data to a CSV file.
+# Data comes in as dict
 import asyncio
 import os
 import pandas as pd
@@ -20,11 +21,13 @@ tickers = finnhub_universe_df["Ticker"].tolist()
 # Randomize the order of the tickers
 random.shuffle(tickers)
 
-# Fetch the profile data
+# Fetch the quarterly income statement data
 results_df, api_call_timestamps = asyncio.run(
     fetch_finnhub_data(
         tickers,
-        endpoint="price-target",
+        endpoint="financials",
+        statement="ic",
+        freq="quarterly",
         simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
         api_delay=API_DELAY,
         query_max=QUERY_MAX,
@@ -32,14 +35,16 @@ results_df, api_call_timestamps = asyncio.run(
 )
 
 # Save Results to CSV
-results_df.to_csv(os.path.join(output_folder, "finnhub_price_target.csv"), index=False)
+results_df.to_csv(
+    os.path.join(output_folder, "finnhub_financials_ic_q.csv"), index=False
+)
 
 # Save API Call Timestamps to CSV
 api_call_timestamps_df = pd.DataFrame(api_call_timestamps)
 api_call_timestamps_df.to_csv(
     os.path.join(
         output_folder,
-        f"finnhub_price_target_api_call_timestamps_{pd.Timestamp.now().date()}.csv",
+        f"finnhub_financials_ic_q_api_call_timestamps_{pd.Timestamp.now().date()}.csv",
     ),
     index=False,
 )

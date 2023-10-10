@@ -1,5 +1,6 @@
 # Description: Fetches profile data for a list of tickers from the Finnhub API
 # and saves the data to a CSV file.
+# Data comes in as dict
 import asyncio
 import os
 import pandas as pd
@@ -8,8 +9,8 @@ from modules.fetch_finnhub import fetch_finnhub_data
 from modules.plot_api_calls import plot_api_calls_per_minute, plot_api_calls_per_second
 
 # Constants
-SIMULTANEOUS_CONNECTIONS = 10
-API_DELAY = 2  # 2 seconds
+SIMULTANEOUS_CONNECTIONS = 2
+API_DELAY = 6 / 7
 QUERY_MAX = 5
 output_folder = "test/data/python"
 
