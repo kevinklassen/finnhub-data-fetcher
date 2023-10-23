@@ -13,7 +13,7 @@ START_DATE = int(
 END_DATE = int(datetime.strptime(str(date.today()), "%Y-%m-%d").timestamp())
 
 # Fetch from Finnhub API
-results_df, api_call_timestamps = fetch_finnhub_data(
+fetch_finnhub_data(
     endpoint=ENDPOINT,
     simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
     api_delay=API_DELAY,
