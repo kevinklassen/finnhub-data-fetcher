@@ -1,19 +1,9 @@
-from modules.fetch_finnhub import fetch_finnhub_data
-
-# Parameters
-ENDPOINT = "financials"
-SIMULTANEOUS_CONNECTIONS = 10
-API_DELAY = 2
-QUERY_MAX = 5
-STATEMENT = "cf"
-FREQ = "quarterly"
+from modules.fetch_finnhub import fetch_data_for_endpoint
+from modules.store_finnhub import write_to_jsonl
 
 # Fetch from Finnhub API
-fetch_finnhub_data(
-    endpoint=ENDPOINT,
-    simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
-    api_delay=API_DELAY,
-    query_max=QUERY_MAX,
-    statement=STATEMENT,
-    freq=FREQ,
-)
+data = fetch_data_for_endpoint(endpoint="financials", sub_config_key="cf_quarterly")
+
+# Store data in JSONL file
+file_path = "test/data/json/finnhub_financials_cf_q.jsonl"
+write_to_jsonl(data, file_path)

@@ -1,15 +1,9 @@
-from modules.fetch_finnhub import fetch_finnhub_data
-
-# Parameters
-ENDPOINT = "price-target"
-SIMULTANEOUS_CONNECTIONS = 10
-API_DELAY = 2
-QUERY_MAX = 5
+from modules.fetch_finnhub import fetch_data_for_endpoint
+from modules.store_finnhub import write_to_jsonl
 
 # Fetch from Finnhub API
-fetch_finnhub_data(
-    endpoint=ENDPOINT,
-    simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
-    api_delay=API_DELAY,
-    query_max=QUERY_MAX,
-)
+data = fetch_data_for_endpoint(endpoint="price-target")
+
+# Store data in JSONL file
+file_path = "test/data/json/finnhub_price_target.jsonl"
+write_to_jsonl(data, file_path)
