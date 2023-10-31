@@ -1,24 +1,20 @@
 from datetime import datetime, date, timedelta
-from modules.fetch_finnhub import fetch_finnhub_data
+from modules.fetch_finnhub import fetch_data_for_endpoint
+from modules.store_finnhub import write_to_jsonl
 
-# Parameters
-ENDPOINT = "candle"
-SIMULTANEOUS_CONNECTIONS = 1
-API_DELAY = 1
-QUERY_MAX = 5
-RESOLUTION = "D"
-START_DATE = int(
-    datetime.strptime(str(date.today() - timedelta(days=7)), "%Y-%m-%d").timestamp()
+# Compute dynamic params for candle endpoint
+start_date = int(
+    datetime.strptime(str(date.today() - timedelta(days=8)), "%Y-%m-%d").timestamp()
 )
-END_DATE = int(datetime.strptime(str(date.today()), "%Y-%m-%d").timestamp())
+end_date = int(
+    datetime.strptime(str(date.today() - timedelta(days=1)), "%Y-%m-%d").timestamp()
+)
 
 # Fetch from Finnhub API
-fetch_finnhub_data(
-    endpoint=ENDPOINT,
-    simultaneous_connections=SIMULTANEOUS_CONNECTIONS,
-    api_delay=API_DELAY,
-    query_max=QUERY_MAX,
-    resolution=RESOLUTION,
-    start_date=START_DATE,
-    end_date=END_DATE,
+data = fetch_data_for_endpoint(
+    endpoint="candle", start_date=start_date, end_date=end_date
 )
+
+# Store data in JSONL file
+file_path = "test/data/json/finnhub_candle.jsonl"
+write_to_jsonl(data, file_path)
