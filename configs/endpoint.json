@@ -1,0 +1,98 @@
+{
+  "default_api_settings": {
+    "simultaneous_connections": 10,
+    "api_delay": 2,
+    "query_max": 5
+  },
+  "profile": {
+    "api": {},
+    "params": {}
+  },
+  "recommendation": {
+    "api": {},
+    "params": {}
+  },
+  "price-target": {
+    "api": {},
+    "params": {}
+  },
+  "revenue-estimate": {
+    "api": {},
+    "params": {
+      "freq": "quarterly"
+    }
+  },
+  "ebitda-estimate": {
+    "api": {},
+    "params": {
+      "freq": "quarterly"
+    }
+  },
+  "ebit-estimate": {
+    "api": {},
+    "params": {
+      "freq": "quarterly"
+    }
+  },
+  "eps-estimate": {
+    "api": {},
+    "params": {
+      "freq": "quarterly"
+    }
+  },
+  "financials": {
+    "bs_annual": {
+      "api": {},
+      "params": {
+        "statement": "bs",
+        "freq": "annual"
+      }
+    },
+    "bs_quarterly": {
+      "api": {},
+      "params": {
+        "statement": "bs",
+        "freq": "quarterly"
+      }
+    },
+    "cf_annual": {
+      "api": {},
+      "params": {
+        "statement": "cf",
+        "freq": "annual"
+      }
+    },
+    "cf_quarterly": {
+      "api": {},
+      "params": {
+        "statement": "cf",
+        "freq": "quarterly"
+      }
+    },
+    "ic_annual": {
+      "api": {},
+      "params": {
+        "statement": "ic",
+        "freq": "annual"
+      }
+    },
+    "ic_quarterly": {
+      "api": {},
+      "params": {
+        "statement": "ic",
+        "freq": "quarterly"
+      }
+    }
+  },
+  "candle": {
+    "api": {
+      "simultaneous_connections": 1,
+      "api_delay": 1
+    },
+    "params": {
+      "resolution": "D",
+      "start_date": "dynamic",
+      "end_date": "dynamic"
+    }
+  }
+}
