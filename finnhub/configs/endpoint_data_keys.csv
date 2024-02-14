@@ -1,0 +1,11 @@
+﻿endpoint,data_json_key,primary_key
+candle,,t
+ebit_estimate,data,period
+ebitda_estimate,data,period
+eps_estimate,data,period
+financials,financials,period
+price_target,,lastUpdated
+profile,,
+recommendation,,period
+revenue_estimate,data,period
+symbol,,
