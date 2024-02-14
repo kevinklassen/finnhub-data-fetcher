@@ -1,34 +1,29 @@
-"""fetch_finnhub - Fetch data from the Finnhub API.
+"""Module for fetching data from the Finnhub API asynchronously.
 
-This module provides functions to asynchronously fetch data from the Finnhub API 
-for a given list of tickers. Below are the supported endpoints:
-    - "profile": Company Information Data
-    - "recommendation": Company Recommendation Data
-    - "price-target": Company Price Target Data
-    - "revenue-estimate": Sales Estimates
-    - "ebitda-estimate": EBITDA Estimate
-    - "ebit-estimate": EBIT Estimate
-    - "eps-estimate": EPS Estimate
-    - "financials": Financial Data
-    - "candle": Market Data
-Each endpoint may require additional parameters to be provided. Below is a complete
-list of possible parameters:
-    - statement (str, required for 'financials' endpoint):
-        Possible values: 'bs' (Balance Sheet), 'ic' (Income Statement), 'cf' (Cash Flow).
-    - freq (str, required for 'financials' and estimates endpoints):
-        Possible values: 'annual', 'quarterly', 'ttm' (financials only), and 'ytd' (financials only).
-    - resolution (str, required for 'candle' endpoint):
-        Possible values: '1', '5', '15', '30', '60', 'D', 'W', 'M'.
-    - start_date (int, required for 'candle' endpoint): Start date in UNIX timestamp format.
-    - end_date (int, required for 'candle' endpoint): End date in UNIX timestamp format.
-The module allows for the use of the API to be configured using the following parameters:
-    - simultaneous_connections (int): Maximum number of simultaneous connections.
-    - api_delay (int): Delay between API calls in seconds.
-    - query_max (int): Maximum number of queries to attempt.
-    - key (str, optional): API key for accessing the Finnhub API. Defaults to FINNHUB_API_KEY.
+This module provides functionality to asynchronously fetch data from various endpoints of the Finnhub API for a given list of stock tickers. It supports fetching data from endpoints such as company profiles, financials, market data, and estimates among others. Each endpoint may require specific parameters which can be configured as needed.
+
+The module allows configuring API usage parameters such as the number of simultaneous connections, delay between API calls, and maximum number of query attempts. It also supports reading API settings and endpoint parameters from configuration files stored in an S3 bucket.
+
+Functions:
+    get_api_settings(folder): Retrieves API connection settings from S3.
+    get_endpoint_parameters(folder): Retrieves endpoint parameters from S3.
+    get_endpoint_data_keys(folder): Retrieves endpoint data keys from S3.
+    get_endpoint_config(endpoint, sub_endpoint, **kwargs): Loads API settings and parameters for a given endpoint.
+    get_endpoint_url_function(endpoint, params): Returns a function to generate the URL for a specified endpoint.
+    fetch_data_for_ticker(ticker, api_key, endpoint_url_function, semaphore, api_settings, data_keys): Asynchronously fetches data for a single ticker.
+    fetch_data_for_tickers(tickers, api_key, endpoint_url_function, api_settings, data_keys): Asynchronously fetches data for multiple tickers.
+    fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs): Fetches data from a specified endpoint for provided tickers.
 
 Attributes:
-    FINNHUB_API_KEY (str): API key for accessing the Finnhub API.
+    FINNHUB_API_KEY (str): Default API key for accessing the Finnhub API.
+    folder (str): Default folder path for storing and reading configuration files.
+
+Examples:
+    To fetch company profile data for the investable universe of stocks:
+    >>> fetch_data_for_endpoint(endpoint="profile")
+
+    To fetch annual balance sheet data for a specific list of tickers:
+    >>> fetch_data_for_endpoint(endpoint="financials", sub_endpoint="bs_annual", tickers=["AAPL", "MSFT", "GOOGL"])
 """
 
 # Standard library imports
