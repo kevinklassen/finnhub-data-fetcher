@@ -230,6 +230,7 @@ def get_endpoint_url_function(endpoint, params):
 
     # Get the parameters for the endpoint and construct the string
     param_str = "&".join([f"{param}={{{param}}}" for param in params])
+    logger.info(f"Using the following {endpoint} URL param str: {endpoint}?{param_str}")
 
     def url_function(ticker, key):
         # Construct the URL with the parameters
@@ -359,9 +360,18 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
 
     # Load the Finnhub investable universe if tickers are not provided
     if tickers is None:
-        finnhub_universe_df = pd.read_csv(
-            f"{folder}/datasets/finnhub_investable_universe.csv"
-        )
+        logger.info("Fetching the Finnhub investable universe...")
+        try:
+            finnhub_universe_df = pd.read_csv(
+                f"{folder}/datasets/finnhub_investable_universe.csv"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to load the Finnhub investable universe: {e}", exc_info=True
+            )
+            raise e
+
         tickers = finnhub_universe_df["Ticker"].tolist()
         random.shuffle(tickers)  # Randomize the order of the tickers
 
@@ -378,5 +388,8 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
 
     # Store data to folder
     data.to_csv(f"{folder}/datasets/{data_file_name}.csv", index=False)
+    logger.info(
+        f"Stored data from {endpoint} to {folder}/datasets/{data_file_name}.csv!"
+    )
 
-    return data
+    return
