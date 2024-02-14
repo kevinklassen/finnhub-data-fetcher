@@ -358,9 +358,9 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
 
     # Get the storage key for the endpoint
     if sub_endpoint:
-        storage_key = f"{endpoint}_{sub_endpoint}"
+        data_file_name = f"{endpoint}_{sub_endpoint}"
     else:
-        storage_key = endpoint
+        data_file_name = endpoint
 
     # Load the Finnhub investable universe if tickers are not provided
     if tickers is None:
@@ -375,15 +375,13 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
         fetch_data_for_tickers(
             tickers=tickers,
             api_key=FINNHUB_API_KEY,
-            storage_key=storage_key,
             endpoint_url_function=endpoint_url_function,
             api_settings=config.get("api"),
             data_keys=config.get("data_keys"),
         )
     )
 
+    # Store data to folder
+    data.to_csv(f"{folder}/datasets/{data_file_name}.csv", index=False)
+
     return data
-
-
-# Test the fetch_data_for_endpoint function
-data = fetch_data_for_endpoint("financials", "ic_quarterly", tickers=["AAPL", "MSFT"])
