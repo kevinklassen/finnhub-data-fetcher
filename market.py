@@ -1,6 +1,5 @@
 from datetime import datetime, date, timedelta
-from modules.fetch_finnhub import fetch_data_for_endpoint
-from modules.store_finnhub import write_to_jsonl
+from fetch_finnhub import fetch_data_for_endpoint
 
 # Compute dynamic params for candle endpoint
 start_date = int(
@@ -11,10 +10,10 @@ end_date = int(
 )
 
 # Fetch from Finnhub API
-data = fetch_data_for_endpoint(
-    endpoint="candle", start_date=start_date, end_date=end_date
+fetch_data_for_endpoint(
+    endpoint="candle",
+    start_date=start_date,
+    end_date=end_date,
+    resolution="D",
+    tickers=["AAPL"],
 )
-
-# Store data in JSONL file
-file_path = "test/data/json/finnhub_candle.jsonl"
-write_to_jsonl(data, file_path)
