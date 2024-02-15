@@ -373,12 +373,7 @@ def get_endpoint_url_function(endpoint, params):
 
 
 async def fetch_data_for_ticker(
-    ticker,
-    api_key,
-    endpoint_url_function,
-    semaphore,
-    api_settings,
-    data_keys,
+    ticker, api_key, endpoint_url_function, semaphore, api_settings, data_keys, endpoint
 ):
     """
     Asynchronously fetches Finnhub data for a given ticker.
@@ -389,6 +384,7 @@ async def fetch_data_for_ticker(
     :param asyncio.Semaphore semaphore: Semaphore to control concurrent requests.
     :param dict api_settings: Configuration dictionary containing 'api_delay' and 'query_max' values.
     :param dict data_keys: Configuration dictionary containing the data keys for the endpoint.
+    :param str endpoint: The name of the Finnhub endpoint.
     :return: A DataFrame containing the data for the ticker.
     :rtype: pd.DataFrame
     """
@@ -413,7 +409,15 @@ async def fetch_data_for_ticker(
                         data = await response.json()
                         if data:
                             # Create a DataFrame from the data
-                            output = pd.DataFrame(data[data_json_key])
+                            if data_json_key is None or pd.isna(data_json_key):
+                                # If the json is not nested, create a DataFrame from the data
+                                if endpoint == "profile" or endpoint == "price-target":
+                                    output = pd.DataFrame([data])
+                                # If the json is nested, create a DataFrame from the nested data
+                                else:
+                                    output = pd.DataFrame(data)
+                            else:
+                                output = pd.DataFrame(data[data_json_key])
                             output["ticker"] = ticker
                             return output
             except aiohttp.ClientError as e:
@@ -428,6 +432,7 @@ async def fetch_data_for_tickers(
     endpoint_url_function,
     api_settings,
     data_keys,
+    endpoint,
 ):
     """
     Asynchronously fetches Finnhub data for a list of tickers.
@@ -437,6 +442,7 @@ async def fetch_data_for_tickers(
     :param function endpoint_url_function: Function to generate endpoint URLs.
     :param dict api_settings: Configuration dictionary containing 'simultaneous_connections', 'api_delay', and 'query_max' values.
     :param dict data_keys: Configuration dictionary containing the data keys for the endpoint.
+    :param str endpoint: The name of the Finnhub endpoint.
     :return: The endpoint data for the given tickers.
     :rtype: pd.DataFrame
     """
@@ -454,6 +460,7 @@ async def fetch_data_for_tickers(
                 semaphore,
                 api_settings,
                 data_keys,
+                endpoint,
             )
             for ticker in tickers
         )
@@ -491,6 +498,7 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
         investable_universe_path = os.path.join(
             f"{folder}/datasets/finnhub_investable_universe.csv"
         )
+        # Check if the investable universe file exists and is up to date
         if os.path.exists(investable_universe_path) and (
             datetime.datetime.now().date()
             == datetime.datetime.fromtimestamp(
@@ -511,6 +519,7 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
             endpoint_url_function=endpoint_url_function,
             api_settings=config.get("api"),
             data_keys=config.get("data_keys"),
+            endpoint=endpoint,
         )
     )
 
