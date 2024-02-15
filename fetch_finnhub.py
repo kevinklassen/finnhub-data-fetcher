@@ -27,21 +27,152 @@ Examples:
 """
 
 # Standard library imports
+import asyncio
+from io import StringIO
 import logging
 import random
+import requests
+import os
 
 # Third-party imports
 import aiohttp
-import asyncio
 import pandas as pd
 
 # Initialize logger and spark session
-logging.basicConfig(file="finnhub.log", level=logging.INFO)
+logging.basicConfig(
+    filename="finnhub.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 # Constants
 FINNHUB_API_KEY = 123  # replace with actual key
 folder = "finnhub"
+
+
+def get_index_data(url, exchange_list, skip_rows=9):
+    """
+    Fetches and filters index data from a given URL.
+
+    :param str url: The URL from which to fetch the CSV data.
+    :param list exchange_list: A list of exchanges to filter the tickers by.
+    :param int skip_rows: The number of rows to skip at the start of the CSV file, defaults to 9.
+    :return: A DataFrame containing the filtered index data.
+    :rtype: pandas.DataFrame
+    """
+
+    response = requests.get(url)
+    csv_data = pd.read_csv(StringIO(response.text), skiprows=skip_rows)
+    return csv_data[
+        (csv_data["Asset Class"] == "Equity")
+        & csv_data["Exchange"].isin(exchange_list)
+        & csv_data["Ticker"].str.isalpha()
+    ]
+
+
+def create_investable_universe(folder):
+    """
+    Creates an investable universe of tickers based on specified indices and extra tickers.
+
+    :param str folder: The folder path where the investable universe CSV file will be saved.
+    :return: A DataFrame containing the supported universe of tickers.
+    :rtype: pandas.DataFrame
+    """
+
+    # Load Supported Tickers
+    symbols_url = (
+        f"https://finnhub.io/api/v1/stock/symbol?exchange=US&token={FINNHUB_API_KEY}"
+    )
+    symbols_response = requests.get(symbols_url)
+    symbols_df = pd.DataFrame(symbols_response.json())
+
+    # List of exchanges to keep
+    exchange_list = [
+        "NASDAQ",
+        "New York Stock Exchange Inc.",
+        "Nyse Mkt Llc",
+        "Cboe BZX formerly known as BATS",
+    ]
+
+    # List of index information (name, URL)
+    index_info_list = [
+        (
+            "r1000",
+            "https://www.ishares.com/us/products/239707/ishares-russell-1000-etf/1467271812596.ajax?fileType=csv&fileName=IWB_holdings&dataType=fund",
+        ),
+        (
+            "r2000",
+            "https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund",
+        ),
+        (
+            "r3000",
+            "https://www.ishares.com/us/products/239714/ishares-russell-3000-etf/1467271812596.ajax?fileType=csv&fileName=IWV_holdings&dataType=fund",
+        ),
+        (
+            "sp500",
+            "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf/1467271812596.ajax?fileType=csv&fileName=IVV_holdings&dataType=fund",
+        ),
+    ]
+
+    # Create a list to collect each index DataFrame
+    all_indices_data = []
+
+    # Get data for each index
+    for index_name, index_url in index_info_list:
+        # Get data
+        index_data = get_index_data(index_url, exchange_list)
+        index_data["index_name"] = index_name
+        index_data["date"] = pd.Timestamp.now().date()
+        index_data["datetime"] = pd.Timestamp.now()
+
+        # Append to the list
+        all_indices_data.append(index_data)
+
+    # Concatenate all DataFrames
+    all_indices_df = pd.concat(all_indices_data, ignore_index=True)
+
+    # Add Extra Tickers
+    extra_tickers = ["HBB", "MMYT", "TGLS", "CYRX", "PROF", "EVLV"]
+    extra_tickers_df = pd.DataFrame(extra_tickers, columns=["Ticker"])
+
+    # Get the unique indices and create column names with 'in_' prefix
+    unique_indices = all_indices_df["index_name"].unique()
+    index_columns = ["in_" + index_name for index_name in unique_indices]
+
+    # Initialize the indices columns with 0 for extra tickers
+    for column in index_columns:
+        extra_tickers_df[column] = 0
+
+    # Append the extra tickers to all_indices_df
+    combined_df = pd.concat([all_indices_df, extra_tickers_df], ignore_index=True)
+
+    # Convert index_name into dummy variables
+    index_dummies = pd.get_dummies(
+        combined_df[["Ticker", "index_name"]],
+        columns=["index_name"],
+        prefix="in",
+        prefix_sep="_",
+    )
+
+    # Sum up the dummy variables to consolidate ticker information
+    investable_universe_df = index_dummies.groupby("Ticker").sum().reset_index()
+
+    # Filter to keep only the tickers supported by Finnhub
+    supported_universe_df = investable_universe_df[
+        investable_universe_df["Ticker"].isin(symbols_df["symbol"])
+    ]
+
+    # Ensure the folder/datasets directory exists
+    if not os.path.exists(f"{folder}/datasets"):
+        os.makedirs(f"{folder}/datasets")
+
+    # Save the Investable Universe to CSV
+    supported_universe_df.to_csv(
+        os.path.join(f"{folder}/datasets/finnhub_investable_universe.csv"), index=False
+    )
+
+    return supported_universe_df
 
 
 def get_api_settings(folder):
@@ -305,10 +436,8 @@ async def fetch_data_for_tickers(
     :param function endpoint_url_function: Function to generate endpoint URLs.
     :param dict api_settings: Configuration dictionary containing 'simultaneous_connections', 'api_delay', and 'query_max' values.
     :param dict data_keys: Configuration dictionary containing the data keys for the endpoint.
-    :return: A list of dictionaries, each containing data for one ticker.
-             Each dictionary has fields for the ticker, timestamp, and the data itself.
-             Missing data is indicated by a None value in the 'data' field.
-    :rtype: list
+    :return: The endpoint data for the given tickers.
+    :rtype: pd.DataFrame
     """
 
     # Initialize semaphore for concurrent requests
@@ -340,10 +469,7 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
     :param str sub_endpoint: (optional) The name of the Finnhub sub-endpoint such as "bs_annual" within the "financials" endpoint.
     :param list tickers: (optional) List of stock ticker symbols to fetch data for.
     :param dict kwargs: Additional parameters to override the config parameters.
-    :return: A list of dictionaries, each containing data for one ticker.
-             Each dictionary has fields for the ticker, timestamp, and the data itself.
-             Missing data is indicated by a None value in the 'data' field.
-    :rtype: list
+    :return: None
     """
 
     # Get the configuration and URL for the endpoint
@@ -358,20 +484,10 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
     else:
         data_file_name = endpoint
 
-    # Load the Finnhub investable universe if tickers are not provided
+    # Create and load the Finnhub investable universe if tickers are not provided
     if tickers is None:
-        logger.info("Fetching the Finnhub investable universe...")
-        try:
-            finnhub_universe_df = pd.read_csv(
-                f"{folder}/datasets/finnhub_investable_universe.csv"
-            )
-
-        except Exception as e:
-            logger.error(
-                f"Failed to load the Finnhub investable universe: {e}", exc_info=True
-            )
-            raise e
-
+        logger.info(f"Fetching your investable universe...")
+        finnhub_universe_df = create_investable_universe(folder)
         tickers = finnhub_universe_df["Ticker"].tolist()
         random.shuffle(tickers)  # Randomize the order of the tickers
 
