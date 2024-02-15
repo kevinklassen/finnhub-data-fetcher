@@ -28,6 +28,7 @@ Examples:
 
 # Standard library imports
 import asyncio
+import datetime
 from io import StringIO
 import logging
 import random
@@ -487,7 +488,18 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
     # Create and load the Finnhub investable universe if tickers are not provided
     if tickers is None:
         logger.info(f"Fetching your investable universe...")
-        finnhub_universe_df = create_investable_universe(folder)
+        investable_universe_path = os.path.join(
+            f"{folder}/datasets/finnhub_investable_universe.csv"
+        )
+        if os.path.exists(investable_universe_path) and (
+            datetime.datetime.now().date()
+            == datetime.datetime.fromtimestamp(
+                os.path.getmtime(investable_universe_path)
+            ).date()
+        ):
+            finnhub_universe_df = pd.read_csv(investable_universe_path)
+        else:
+            finnhub_universe_df = create_investable_universe(folder)
         tickers = finnhub_universe_df["Ticker"].tolist()
         random.shuffle(tickers)  # Randomize the order of the tickers
 
