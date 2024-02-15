@@ -1,5 +1,6 @@
 __pycache__/*
 */datasets/*
+*.log
 .vscode/*
 # Ignore macOS .DS_Store files
 .DS_Store
