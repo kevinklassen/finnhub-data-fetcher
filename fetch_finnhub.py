@@ -41,9 +41,9 @@ import pandas as pd
 
 # Initialize logger and spark session
 logging.basicConfig(
-    filename="finnhub.log",
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("finnhub.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -82,11 +82,13 @@ def create_investable_universe(folder):
     """
 
     # Load Supported Tickers
+    logger.info("Fetching supported tickers from Finnhub...")
     symbols_url = (
         f"https://finnhub.io/api/v1/stock/symbol?exchange=US&token={FINNHUB_API_KEY}"
     )
     symbols_response = requests.get(symbols_url)
     symbols_df = pd.DataFrame(symbols_response.json())
+    logger.info(f"Fetched {len(symbols_df)} supported tickers from Finnhub")
 
     # List of exchanges to keep
     exchange_list = [
@@ -120,6 +122,7 @@ def create_investable_universe(folder):
     all_indices_data = []
 
     # Get data for each index
+    logger.info("Fetching index data from iShares...")
     for index_name, index_url in index_info_list:
         # Get data
         index_data = get_index_data(index_url, exchange_list)
@@ -129,6 +132,7 @@ def create_investable_universe(folder):
 
         # Append to the list
         all_indices_data.append(index_data)
+    logger.info(f"Fetched index data for {len(all_indices_data)} indices")
 
     # Concatenate all DataFrames
     all_indices_df = pd.concat(all_indices_data, ignore_index=True)
@@ -149,6 +153,7 @@ def create_investable_universe(folder):
     combined_df = pd.concat([all_indices_df, extra_tickers_df], ignore_index=True)
 
     # Convert index_name into dummy variables
+    logger.info("Creating dummy variables for indices...")
     index_dummies = pd.get_dummies(
         combined_df[["Ticker", "index_name"]],
         columns=["index_name"],
@@ -163,6 +168,9 @@ def create_investable_universe(folder):
     supported_universe_df = investable_universe_df[
         investable_universe_df["Ticker"].isin(symbols_df["symbol"])
     ]
+    logger.info(
+        f"Created investable universe with {len(supported_universe_df)} tickers"
+    )
 
     # Ensure the folder/datasets directory exists
     if not os.path.exists(f"{folder}/datasets"):
@@ -171,6 +179,9 @@ def create_investable_universe(folder):
     # Save the Investable Universe to CSV
     supported_universe_df.to_csv(
         os.path.join(f"{folder}/datasets/finnhub_investable_universe.csv"), index=False
+    )
+    logger.info(
+        f"Saved investable universe to {folder}/datasets/finnhub_investable_universe.csv"
     )
 
     return supported_universe_df
@@ -191,7 +202,7 @@ def get_api_settings(folder):
     # Read the configuration from S3
     try:
         config_df = pd.read_csv(f"{folder}/{key}")
-        logger.info(f"Successfully loaded Finnhub API settings from {folder}/{key}.")
+        logger.info(f"Successfully loaded Finnhub API settings from {folder}/{key}")
         return config_df
 
     except Exception as e:
@@ -218,7 +229,7 @@ def get_endpoint_parameters(folder):
     try:
         config_df = pd.read_csv(f"{folder}/{key}")
         logger.info(
-            f"Successfully loaded Finnhub endpoint parameters from {folder}/{key}."
+            f"Successfully loaded Finnhub endpoint parameters from {folder}/{key}"
         )
         return config_df
 
@@ -247,7 +258,7 @@ def get_endpoint_data_keys(folder):
     try:
         config_df = pd.read_csv(f"{folder}/{key}")
         logger.info(
-            f"Successfully loaded Finnhub endpoint parameters from {folder}/{key}."
+            f"Successfully loaded Finnhub endpoint parameters from {folder}/{key}"
         )
         return config_df
 
@@ -362,7 +373,6 @@ def get_endpoint_url_function(endpoint, params):
 
     # Get the parameters for the endpoint and construct the string
     param_str = "&".join([f"{param}={{{param}}}" for param in params])
-    logger.info(f"Using the following {endpoint} URL param str: {endpoint}?{param_str}")
 
     def url_function(ticker, key):
         # Construct the URL with the parameters
@@ -419,9 +429,17 @@ async def fetch_data_for_ticker(
                             else:
                                 output = pd.DataFrame(data[data_json_key])
                             output["ticker"] = ticker
+                            logger.info(
+                                f"Fetched {len(output)} rows of data for {ticker} from {full_url}"
+                            )
                             return output
+                        else:
+                            logger.warning(
+                                f"No {endpoint} data returned for {ticker}. Skipping..."
+                            )
+                            return None
             except aiohttp.ClientError as e:
-                logger.error(f"Error fetching data for {ticker}: {e}")
+                logger.error(f"Error fetching {endpoint} data for {ticker}: {e}")
 
         return
 
@@ -465,7 +483,6 @@ async def fetch_data_for_tickers(
             for ticker in tickers
         )
     )
-
     return pd.concat(results, ignore_index=True)
 
 
@@ -499,6 +516,9 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
             f"{folder}/datasets/finnhub_investable_universe.csv"
         )
         # Check if the investable universe file exists and is up to date
+        logger.info(
+            f"Checking if {investable_universe_path} exists and is up to date..."
+        )
         if os.path.exists(investable_universe_path) and (
             datetime.datetime.now().date()
             == datetime.datetime.fromtimestamp(
@@ -507,11 +527,21 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
         ):
             finnhub_universe_df = pd.read_csv(investable_universe_path)
         else:
+            logger.info(
+                f"Creating and saving your investable universe to {investable_universe_path}..."
+            )
             finnhub_universe_df = create_investable_universe(folder)
         tickers = finnhub_universe_df["Ticker"].tolist()
+        logger.info(f"Shuffling {len(tickers)} tickers from your investable universe")
         random.shuffle(tickers)  # Randomize the order of the tickers
 
     # Fetch from Finnhub API
+    if sub_endpoint:
+        logger.info(
+            f"Fetching {len(tickers)} tickers from {endpoint}/{sub_endpoint}..."
+        )
+    else:
+        logger.info(f"Fetching data for {len(tickers)} tickers from {endpoint}...")
     data = asyncio.run(
         fetch_data_for_tickers(
             tickers=tickers,
@@ -522,11 +552,19 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
             endpoint=endpoint,
         )
     )
+    if sub_endpoint:
+        logger.info(f"Fetched {len(data)} rows of data from {endpoint}/{sub_endpoint}")
+    else:
+        logger.info(f"Fetched {len(data)} rows of data from {endpoint}")
+
+    # Ensure the folder/datasets directory exists
+    if not os.path.exists(f"{folder}/datasets"):
+        os.makedirs(f"{folder}/datasets")
 
     # Store data to folder
     data.to_csv(f"{folder}/datasets/{data_file_name}.csv", index=False)
     logger.info(
-        f"Stored data from {endpoint} to {folder}/datasets/{data_file_name}.csv!"
+        f"Stored data from {endpoint} to {folder}/datasets/{data_file_name}.csv"
     )
 
     return
