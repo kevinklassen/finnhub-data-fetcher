@@ -13,15 +13,12 @@ Functions:
     fetch_data_for_tickers(tickers, api_key, endpoint_url_function, api_settings, data_keys): Asynchronously fetches data for multiple tickers.
     fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs): Fetches data from a specified endpoint for provided tickers.
 
-Attributes:
-    FINNHUB_API_KEY (str): Default API key for accessing the Finnhub API.
-
 Examples:
     To fetch company profile data for the investable universe of stocks:
-    >>> fetch_data_for_endpoint(endpoint="profile")
+    >>> fetch_data_for_endpoint(endpoint="profile", api_key="your api key")
 
     To fetch annual balance sheet data for a specific list of tickers:
-    >>> fetch_data_for_endpoint(endpoint="financials", sub_endpoint="bs_annual", tickers=["AAPL", "MSFT", "GOOGL"])
+    >>> fetch_data_for_endpoint(endpoint="financials", sub_endpoint="bs_annual", tickers=["AAPL", "MSFT", "GOOGL"], api_key="your api key")
 """
 
 # Standard library imports
@@ -45,15 +42,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Set the API key for accessing the Finnhub API
-FINNHUB_API_KEY = "abc123"  # replace with actual key
 # Load configuration files
 API_SETTINGS = pd.read_csv("finnhub/configs/api_settings.csv")
 ENDPOINT_PARAMETERS = pd.read_csv("finnhub/configs/endpoint_parameters.csv")
 ENDPOINT_DATA_KEYS = pd.read_csv("finnhub/configs/endpoint_data_keys.csv")
 
 
-def get_index_data(url, exchange_list, skip_rows=9):
+def get_index_data(
+    url,
+    exchange_list,
+    skip_rows=9,
+):
     """
     Fetches and filters index data from a given URL.
 
@@ -73,13 +72,17 @@ def get_index_data(url, exchange_list, skip_rows=9):
     ]
 
 
-def create_investable_universe(extra_tickers=None):
+def create_investable_universe(
+    api_key,
+    extra_tickers=None,
+):
     """
     Creates an investable universe of tickers based on specified indices and extra tickers.
     By default, the investable universe is created based on the Russell 3000 and S&P 500 indices
     and only includes tickers supported by the Finnhub API. Extra tickers can be included in the
     investable universe by providing a list to the extra_tickers parameter.
 
+    :param str api_key: API key for accessing the Finnhub API.
     :param extra_tickers: A list of extra tickers to include in the investable universe that
     are not contained in the Russell 3000 or S&P 500.
     :type extra_tickers: list or None
@@ -90,9 +93,7 @@ def create_investable_universe(extra_tickers=None):
 
     # Load Supported Tickers
     logger.info("Fetching supported tickers from Finnhub...")
-    symbols_url = (
-        f"https://finnhub.io/api/v1/stock/symbol?exchange=US&token={FINNHUB_API_KEY}"
-    )
+    symbols_url = f"https://finnhub.io/api/v1/stock/symbol?exchange=US&token={api_key}"
     symbols_response = requests.get(symbols_url)
     symbols_df = pd.DataFrame(symbols_response.json())
     logger.info(f"Fetched {len(symbols_df)} supported tickers from Finnhub")
@@ -200,7 +201,11 @@ def create_investable_universe(extra_tickers=None):
     return supported_universe_df
 
 
-def get_endpoint_config(endpoint, sub_endpoint, **kwargs):
+def get_endpoint_config(
+    endpoint,
+    sub_endpoint,
+    **kwargs,
+):
     """
     Load API settings and parameters for a given endpoint and/or sub_endpoint.
 
@@ -286,7 +291,10 @@ def get_endpoint_config(endpoint, sub_endpoint, **kwargs):
     return config
 
 
-def get_endpoint_url_function(endpoint, params):
+def get_endpoint_url_function(
+    endpoint,
+    params,
+):
     """
     Returns a function to generate the URL for the specified Finnhub endpoint.
 
@@ -308,13 +316,19 @@ def get_endpoint_url_function(endpoint, params):
 
 
 async def fetch_data_for_ticker(
-    ticker, api_key, endpoint_url_function, semaphore, api_settings, data_keys, endpoint
+    api_key,
+    ticker,
+    endpoint_url_function,
+    semaphore,
+    api_settings,
+    data_keys,
+    endpoint,
 ):
     """
     Asynchronously fetches Finnhub data for a given ticker.
 
-    :param str ticker: Stock ticker symbol.
     :param str api_key: API key for accessing the Finnhub API.
+    :param str ticker: Stock ticker symbol.
     :param function endpoint_url_function: Function to generate endpoint URL.
     :param asyncio.Semaphore semaphore: Semaphore to control concurrent requests.
     :param dict api_settings: Configuration dictionary containing 'api_delay' and 'query_max' values.
@@ -370,8 +384,8 @@ async def fetch_data_for_ticker(
 
 
 async def fetch_data_for_tickers(
-    tickers,
     api_key,
+    tickers,
     endpoint_url_function,
     api_settings,
     data_keys,
@@ -380,8 +394,8 @@ async def fetch_data_for_tickers(
     """
     Asynchronously fetches Finnhub data for a list of tickers.
 
-    :param list tickers: List of stock ticker symbols.
     :param str api_key: API key for accessing the Finnhub API.
+    :param list tickers: List of stock ticker symbols.
     :param function endpoint_url_function: Function to generate endpoint URLs.
     :param dict api_settings: Configuration dictionary containing 'simultaneous_connections', 'api_delay', and 'query_max' values.
     :param dict data_keys: Configuration dictionary containing the data keys for the endpoint.
@@ -397,8 +411,8 @@ async def fetch_data_for_tickers(
     results = await asyncio.gather(
         *(
             fetch_data_for_ticker(
-                ticker,
                 api_key,
+                ticker,
                 endpoint_url_function,
                 semaphore,
                 api_settings,
@@ -411,14 +425,21 @@ async def fetch_data_for_tickers(
     return pd.concat(results, ignore_index=True)
 
 
-def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs):
+def fetch_data_for_endpoint(
+    api_key,
+    endpoint,
+    sub_endpoint=None,
+    tickers=None,
+    **kwargs,
+):
     """
     Fetches data from a specified Finnhub endpoint for all tickers in the investable universe or provided tickers.
 
+    :param str api_key: API key for accessing the Finnhub API.
     :param str endpoint: The name of the Finnhub endpoint.
     :param str sub_endpoint: (optional) The name of the Finnhub sub-endpoint such as "bs_annual" within the "financials" endpoint.
     :param list tickers: (optional) List of stock ticker symbols to fetch data for.
-    :param dict kwargs: Additional parameters to override the config parameters.
+    :param dict kwargs: Additional params to override default or pass to the endpoint. For example, dynamic "start_date" and "end_date" for the "candle" endpoint.
     :return: None
     """
 
@@ -456,7 +477,8 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
                 f"Creating and saving your investable universe to {investable_universe_path}..."
             )
             finnhub_universe_df = create_investable_universe(
-                extra_tickers=["HBB", "MMYT", "TGLS", "CYRX", "PROF", "EVLV"]
+                api_key=api_key,
+                extra_tickers=["HBB", "MMYT", "TGLS", "CYRX", "PROF", "EVLV"],
             )
         tickers = finnhub_universe_df["Ticker"].tolist()
         logger.info(f"Shuffling {len(tickers)} tickers from your investable universe")
@@ -469,10 +491,12 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
         )
     else:
         logger.info(f"Fetching data for {len(tickers)} tickers from {endpoint}...")
+
+    # Fetch data for the tickers
     data = asyncio.run(
         fetch_data_for_tickers(
+            api_key=api_key,
             tickers=tickers,
-            api_key=FINNHUB_API_KEY,
             endpoint_url_function=endpoint_url_function,
             api_settings=config.get("api"),
             data_keys=config.get("data_keys"),

@@ -32,6 +32,13 @@ sub_endpoints = {
 for endpoint in endpoints:
     if endpoint in sub_endpoints:
         for sub_endpoint in sub_endpoints[endpoint]:
-            fetch_data_for_endpoint(endpoint=endpoint, sub_endpoint=sub_endpoint)
+            fetch_data_for_endpoint(
+                api_key="your API key",
+                endpoint=endpoint,
+                sub_endpoint=sub_endpoint,
+            )
     else:
-        fetch_data_for_endpoint(endpoint=endpoint)
+        fetch_data_for_endpoint(
+            api_key="your API key",
+            endpoint=endpoint,
+        )
