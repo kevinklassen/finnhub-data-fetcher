@@ -1,6 +1,6 @@
 # Finnhub Data Fetcher
 
-The Finnhub Data Fetcher is a Python module designed for asynchronously fetching data from various endpoints of the Finnhub API. It supports fetching data for a list of stock tickers across different endpoints such as company profiles, financials, market data, and estimates. The module is capable of handling API usage parameters, reading settings from configuration files, and storing fetched data efficiently.
+The Finnhub Data Fetcher is a Python module designed for asynchronously fetching data from various endpoints of the Finnhub API. It improves upon the Finnhub python module or standalone API as it allows users to fetch data for a universe of equity securities, rather than one at a time. By default, all securities from the Russell 3000 and S&P 500 are fetched. It automatically maximizes the API throughput for the Fundamentals and Market endpoints, assuming a premium Finnhub data subscription. The module is capable of handling API usage parameters, reading settings from configuration files, and storing fetched data efficiently. It is designed to be easily extensible to support additional endpoints and data sources. **Note**: This module is not affiliated with Finnhub and is not an official Finnhub product.
 
 ## Features
 
