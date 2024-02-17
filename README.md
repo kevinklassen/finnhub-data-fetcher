@@ -22,13 +22,13 @@ The Finnhub Data Fetcher is a Python module designed for asynchronously fetching
 
 ### Fetching Data for Endpoints
 
-To fetch data for a specific endpoint, use the [fetch_data_for_endpoint](file:///Users/kevin/Projects/pipeline-finnhub-raw/fundamentals.py#6%2C27-6%2C27) function. For example, to fetch company profile data:
+To fetch data for a specific endpoint, use the `fetch_data_for_endpoint` function:
 
 ```python
 fetch_data_for_endpoint(endpoint="profile")
 ```
 
-To fetch annual balance sheet data for a list of tickers:
+To fetch data from an endpoint that has multiple "sub-endpoints" (e.g., financials), use the `fetch_data_for_endpoint` function with the `sub_endpoint` parameter:
 
 ```python
 fetch_data_for_endpoint(endpoint="financials", sub_endpoint="bs_annual", tickers=["AAPL", "MSFT", "GOOGL"])
@@ -36,7 +36,7 @@ fetch_data_for_endpoint(endpoint="financials", sub_endpoint="bs_annual", tickers
 
 ## Configuration
 
-API settings, endpoint parameters, and data keys are configured through CSV files stored in a specified folder. These configurations are loaded at runtime to customize the behavior of the data fetching process.
+API settings, endpoint parameters, and data keys are configured through CSV files stored in `finnhub/configs` folder. These configurations are loaded at runtime to customize the behavior of the data fetching process.
 
 ## Logging
 
@@ -44,7 +44,7 @@ The module logs its operations, including info and error messages, to both a fil
 
 ## Data Storage
 
-Fetched data is stored in the `datasets` directory within the specified folder. The `.gitignore` file is configured to exclude this directory from version control to avoid uploading large data files to the repository.
+Fetched data is stored in the `finnhub/datasets` directory created on your machine. The `.gitignore` file is configured to exclude this directory from version control to avoid uploading large data files to the repository.
 
 ## Dependencies
 
@@ -61,3 +61,7 @@ Ensure you have Python 3.6+ installed. Clone the repository and install the requ
 ```bash
 pip install aiohttp pandas
 ```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

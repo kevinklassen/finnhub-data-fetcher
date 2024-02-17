@@ -5,9 +5,8 @@ This module provides functionality to asynchronously fetch data from various end
 The module allows configuring API usage parameters such as the number of simultaneous connections, delay between API calls, and maximum number of query attempts. It also supports reading API settings and endpoint parameters from configuration files stored in an S3 bucket.
 
 Functions:
-    get_api_settings(folder): Retrieves API connection settings from S3.
-    get_endpoint_parameters(folder): Retrieves endpoint parameters from S3.
-    get_endpoint_data_keys(folder): Retrieves endpoint data keys from S3.
+    get_index_data(url, exchange_list, skip_rows=9): Fetches and filters index data from a given URL.
+    create_investable_universe(extra_tickers): Creates an investable universe of tickers based on specified indices and extra tickers.
     get_endpoint_config(endpoint, sub_endpoint, **kwargs): Loads API settings and parameters for a given endpoint.
     get_endpoint_url_function(endpoint, params): Returns a function to generate the URL for a specified endpoint.
     fetch_data_for_ticker(ticker, api_key, endpoint_url_function, semaphore, api_settings, data_keys): Asynchronously fetches data for a single ticker.
@@ -16,7 +15,6 @@ Functions:
 
 Attributes:
     FINNHUB_API_KEY (str): Default API key for accessing the Finnhub API.
-    folder (str): Default folder path for storing and reading configuration files.
 
 Examples:
     To fetch company profile data for the investable universe of stocks:
@@ -47,9 +45,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Constants
-FINNHUB_API_KEY = 123  # replace with actual key
-folder = "finnhub"
+# Set the API key for accessing the Finnhub API
+FINNHUB_API_KEY = "abc123"  # replace with actual key
+# Load configuration files
+API_SETTINGS = pd.read_csv("finnhub/configs/api_settings.csv")
+ENDPOINT_PARAMETERS = pd.read_csv("finnhub/configs/endpoint_parameters.csv")
+ENDPOINT_DATA_KEYS = pd.read_csv("finnhub/configs/endpoint_data_keys.csv")
 
 
 def get_index_data(url, exchange_list, skip_rows=9):
@@ -72,12 +73,18 @@ def get_index_data(url, exchange_list, skip_rows=9):
     ]
 
 
-def create_investable_universe(folder):
+def create_investable_universe(extra_tickers=None):
     """
     Creates an investable universe of tickers based on specified indices and extra tickers.
+    By default, the investable universe is created based on the Russell 3000 and S&P 500 indices
+    and only includes tickers supported by the Finnhub API. Extra tickers can be included in the
+    investable universe by providing a list to the extra_tickers parameter.
 
-    :param str folder: The folder path where the investable universe CSV file will be saved.
-    :return: A DataFrame containing the supported universe of tickers.
+    :param extra_tickers: A list of extra tickers to include in the investable universe that
+    are not contained in the Russell 3000 or S&P 500.
+    :type extra_tickers: list or None
+    :return: A DataFrame containing the supported universe of tickers and dummy variables for
+    the indices they are contained in, if any.
     :rtype: pandas.DataFrame
     """
 
@@ -137,20 +144,26 @@ def create_investable_universe(folder):
     # Concatenate all DataFrames
     all_indices_df = pd.concat(all_indices_data, ignore_index=True)
 
-    # Add Extra Tickers
-    extra_tickers = ["HBB", "MMYT", "TGLS", "CYRX", "PROF", "EVLV"]
-    extra_tickers_df = pd.DataFrame(extra_tickers, columns=["Ticker"])
+    # Add Extra Tickers to be included in the investable universe, if any
+    if extra_tickers:
+        logger.info(
+            f"Adding extra tickers to investable universe: {', '.join(extra_tickers)}"
+        )
+        extra_tickers_df = pd.DataFrame(extra_tickers, columns=["Ticker"])
 
-    # Get the unique indices and create column names with 'in_' prefix
-    unique_indices = all_indices_df["index_name"].unique()
-    index_columns = ["in_" + index_name for index_name in unique_indices]
+        # Get the unique indices and create column names with 'in_' prefix
+        unique_indices = all_indices_df["index_name"].unique()
+        index_columns = ["in_" + index_name for index_name in unique_indices]
 
-    # Initialize the indices columns with 0 for extra tickers
-    for column in index_columns:
-        extra_tickers_df[column] = 0
+        # Initialize the indices columns with 0 for extra tickers
+        for column in index_columns:
+            extra_tickers_df[column] = 0
 
-    # Append the extra tickers to all_indices_df
-    combined_df = pd.concat([all_indices_df, extra_tickers_df], ignore_index=True)
+        # Append the extra tickers to all_indices_df
+        combined_df = pd.concat([all_indices_df, extra_tickers_df], ignore_index=True)
+
+    else:
+        combined_df = all_indices_df
 
     # Convert index_name into dummy variables
     logger.info("Creating dummy variables for indices...")
@@ -172,108 +185,19 @@ def create_investable_universe(folder):
         f"Created investable universe with {len(supported_universe_df)} tickers"
     )
 
-    # Ensure the folder/datasets directory exists
-    if not os.path.exists(f"{folder}/datasets"):
-        os.makedirs(f"{folder}/datasets")
+    # Ensure the finnhub/datasets directory exists
+    if not os.path.exists("finnhub/datasets"):
+        os.makedirs("finnhub/datasets")
 
     # Save the Investable Universe to CSV
     supported_universe_df.to_csv(
-        os.path.join(f"{folder}/datasets/finnhub_investable_universe.csv"), index=False
+        os.path.join("finnhub/datasets/finnhub_investable_universe.csv"), index=False
     )
     logger.info(
-        f"Saved investable universe to {folder}/datasets/finnhub_investable_universe.csv"
+        f"Saved investable universe to finnhub/datasets/finnhub_investable_universe.csv"
     )
 
     return supported_universe_df
-
-
-def get_api_settings(folder):
-    """
-    Retrieves the Finnhub API connection settings from S3.
-
-    :param str folder: The folder where the API settings are stored.
-    :returns: A DataFrame containing the configuration for the Finnhub API.
-    :rtype: pandas.DataFrame
-    """
-
-    # Set the key for the configuration file
-    key = f"configs/api_settings.csv"
-
-    # Read the configuration from S3
-    try:
-        config_df = pd.read_csv(f"{folder}/{key}")
-        logger.info(f"Successfully loaded Finnhub API settings from {folder}/{key}")
-        return config_df
-
-    except Exception as e:
-        logger.error(
-            f"Failed to load Finnhub API settings from {folder}/{key}: {e}",
-            exc_info=True,
-        )
-        raise e
-
-
-def get_endpoint_parameters(folder):
-    """
-    Retrieves the Finnhub endpoint parameters from S3.
-
-    :param str folder: The folder where the endpoint parameters are stored.
-    :returns: A DataFrame containing the configuration for the Finnhub API endpoints.
-    :rtype: pandas.DataFrame
-    """
-
-    # Set the key for the configuration file
-    key = f"configs/endpoint_parameters.csv"
-
-    # Read the configuration from S3
-    try:
-        config_df = pd.read_csv(f"{folder}/{key}")
-        logger.info(
-            f"Successfully loaded Finnhub endpoint parameters from {folder}/{key}"
-        )
-        return config_df
-
-    except Exception as e:
-        logger.error(
-            f"Failed to load Finnhub API endpoint parameters from {folder}/{key}: {e}",
-            exc_info=True,
-        )
-        raise e
-
-
-def get_endpoint_data_keys(folder):
-    """
-    Retrieves the Finnhub endpoint data keys, including JSON key data is stored and primary key
-    to merge on from S3.
-
-    :param str folder: The folder where the endpoint data keys are stored.
-    :returns: A DataFrame containing the configuration for the Finnhub API endpoints.
-    :rtype: pandas.DataFrame
-    """
-
-    # Set the key for the configuration file
-    key = f"configs/endpoint_data_keys.csv"
-
-    # Read the configuration from S3
-    try:
-        config_df = pd.read_csv(f"{folder}/{key}")
-        logger.info(
-            f"Successfully loaded Finnhub endpoint parameters from {folder}/{key}"
-        )
-        return config_df
-
-    except Exception as e:
-        logger.error(
-            f"Failed to load Finnhub API endpoint parameters from {folder}/{key}: {e}",
-            exc_info=True,
-        )
-        raise e
-
-
-# Load configuration
-API_SETTINGS = get_api_settings(folder)
-ENDPOINT_PARAMETERS = get_endpoint_parameters(folder)
-ENDPOINT_DATA_KEYS = get_endpoint_data_keys(folder)
 
 
 def get_endpoint_config(endpoint, sub_endpoint, **kwargs):
@@ -285,7 +209,8 @@ def get_endpoint_config(endpoint, sub_endpoint, **kwargs):
     :type sub_endpoint: str or None
     :param kwargs: Additional parameters to override the config parameters.
     :type kwargs: dict or None
-    :return: A dictionary with "api" containing the API settings, "params" containing the parameters, and "data_keys" containing the data keys.
+    :return: A dictionary with "api" containing the API settings, "params" containing the
+    parameters, and "data_keys" containing the data keys.
     :rtype: dict
     """
 
@@ -513,7 +438,7 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
     if tickers is None:
         logger.info(f"Fetching your investable universe...")
         investable_universe_path = os.path.join(
-            f"{folder}/datasets/finnhub_investable_universe.csv"
+            "finnhub/datasets/finnhub_investable_universe.csv"
         )
         # Check if the investable universe file exists and is up to date
         logger.info(
@@ -530,7 +455,9 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
             logger.info(
                 f"Creating and saving your investable universe to {investable_universe_path}..."
             )
-            finnhub_universe_df = create_investable_universe(folder)
+            finnhub_universe_df = create_investable_universe(
+                extra_tickers=["HBB", "MMYT", "TGLS", "CYRX", "PROF", "EVLV"]
+            )
         tickers = finnhub_universe_df["Ticker"].tolist()
         logger.info(f"Shuffling {len(tickers)} tickers from your investable universe")
         random.shuffle(tickers)  # Randomize the order of the tickers
@@ -557,14 +484,12 @@ def fetch_data_for_endpoint(endpoint, sub_endpoint=None, tickers=None, **kwargs)
     else:
         logger.info(f"Fetched {len(data)} rows of data from {endpoint}")
 
-    # Ensure the folder/datasets directory exists
-    if not os.path.exists(f"{folder}/datasets"):
-        os.makedirs(f"{folder}/datasets")
+    # Ensure the finnhub/datasets directory exists
+    if not os.path.exists("finnhub/datasets"):
+        os.makedirs("finnhub/datasets")
 
-    # Store data to folder
-    data.to_csv(f"{folder}/datasets/{data_file_name}.csv", index=False)
-    logger.info(
-        f"Stored data from {endpoint} to {folder}/datasets/{data_file_name}.csv"
-    )
+    # Store data to finnhub folder
+    data.to_csv(f"finnhub/datasets/{data_file_name}.csv", index=False)
+    logger.info(f"Stored data from {endpoint} to finnhub/datasets/{data_file_name}.csv")
 
     return
