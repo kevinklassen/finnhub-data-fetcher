@@ -11,9 +11,5 @@ end_date = int(
 
 # Fetch from Finnhub API
 fetch_data_for_endpoint(
-    endpoint="candle",
-    start_date=start_date,
-    end_date=end_date,
-    resolution="D",
-    tickers=["AAPL"],
+    endpoint="candle", start_date=start_date, end_date=end_date, resolution="D"
 )
