@@ -1,0 +1,16 @@
+﻿endpoint,sub_endpoint,parameter,value
+financials,bs_annual,statement,bs
+financials,bs_annual,freq,annual
+financials,bs_quarterly,statement,bs
+financials,bs_quarterly,freq,quarterly
+financials,cf_annual,statement,cf
+financials,cf_annual,freq,annual
+financials,cf_quarterly,statement,cf
+financials,cf_quarterly,freq,quarterly
+financials,ic_annual,statement,ic
+financials,ic_annual,freq,annual
+financials,ic_quarterly,statement,ic
+financials,ic_quarterly,freq,quarterly
+candle,,resolution,D
+candle,,start_date,dynamic
+candle,,end_date,dynamic

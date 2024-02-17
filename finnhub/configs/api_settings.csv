@@ -1,0 +1,6 @@
+﻿endpoint,sub_endpoint,setting,value
+default,,simultaneous_connections,10
+default,,api_delay,2
+default,,query_max,5
+candle,,simultaneous_connections,1
+candle,,api_delay,1
