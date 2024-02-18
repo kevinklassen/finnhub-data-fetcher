@@ -25,13 +25,18 @@ The Finnhub Data Fetcher is a Python module designed for asynchronously fetching
 To fetch data for a specific endpoint, use the `fetch_data_for_endpoint` function:
 
 ```python
-fetch_data_for_endpoint(endpoint="profile")
+fetch_data_for_endpoint(api_key="your_api_key", endpoint="profile")
 ```
 
 To fetch data from an endpoint that has multiple "sub-endpoints" (e.g., financials), use the `fetch_data_for_endpoint` function with the `sub_endpoint` parameter:
 
 ```python
-fetch_data_for_endpoint(endpoint="financials", sub_endpoint="bs_annual", tickers=["AAPL", "MSFT", "GOOGL"])
+fetch_data_for_endpoint(
+  api_key="your_api_key",
+  endpoint="financials",
+  sub_endpoint="bs_annual",
+  tickers=["AAPL", "MSFT", "GOOGL"],
+)
 ```
 
 ## Configuration
