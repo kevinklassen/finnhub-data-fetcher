@@ -62,6 +62,14 @@ Ensure you have Python 3.6+ installed. Clone the repository and install the requ
 pip install aiohttp pandas
 ```
 
+## Limitations
+
+- The current behavior of the module is to override existing data files with new data. This may not be desirable in some cases, especially when fetching data for the same tickers and endpoints multiple times. Finnhub returns the past 10 years of financial data for a given ticker. A future enhancement could be to merge new data with existing data, rather than replacing it.
+
+- The module is designed to fetch data for a universe of equity securities. It does not support fetching data for other asset classes (e.g., options, futures, forex).
+
+- Only "Stock Fundamentals", "Stock Estimates", and "Stock Quote" (specifically "Candles") have been tested. Other endpoints may not work as expected.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
